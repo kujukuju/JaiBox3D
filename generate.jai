@@ -6,8 +6,8 @@
 #import "BuildCpp";
 #import "File_Utilities";
 
-#if OS != .MACOS && OS != .LINUX {
-    #assert false "JaiBox3D binding generation currently supports macOS and Linux.\n";
+#if OS != .WINDOWS && OS != .MACOS && OS != .LINUX {
+    #assert false "JaiBox3D binding generation currently supports Windows, macOS, and Linux.\n";
 }
 
 #run {
@@ -16,12 +16,16 @@
 
     using opts: Generate_Bindings_Options;
 
-    #if OS == .MACOS {
+    #if OS == .WINDOWS {
+        array_add(*library_search_paths, "bin/windows");
+        array_add(*libraries, Library.{"box3d", "box3d"});
+    } else #if OS == .MACOS {
         array_add(*library_search_paths, "bin/macos");
+        array_add(*libraries, Library.{"libbox3d", "box3d"});
     } else #if OS == .LINUX {
         array_add(*library_search_paths, "bin/linux");
+        array_add(*libraries, Library.{"libbox3d", "box3d"});
     }
-    array_add(*libraries, Library.{"libbox3d", "box3d"});
     generate_library_declarations = false;
 
     array_add(*include_paths, "../box3d/include");
@@ -44,7 +48,9 @@
 
     footer = #string JAI
 
-#if OS == .MACOS {
+#if OS == .WINDOWS {
+    box3d :: #library "bin/windows/box3d";
+} else #if OS == .MACOS {
     box3d :: #library "bin/macos/libbox3d";
 } else #if OS == .LINUX {
     box3d :: #library "bin/linux/libbox3d";

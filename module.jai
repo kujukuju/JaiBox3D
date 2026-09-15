@@ -378,7 +378,7 @@ b3RestitutionCallback :: #type (restitutionA: float, userMaterialIdA: u64, resti
 b3CustomFilterFcn :: #type (shapeIdA: b3ShapeId, shapeIdB: b3ShapeId, _context: *void) -> bool #c_call;
 
 /// Identifies the stage that invoked a pre-solve callback.
-b3PreSolvePhase :: enum u32 {
+b3PreSolvePhase :: enum s32 {
     preSolveDiscrete   :: 0;
 
     preSolveContinuous :: 1;
@@ -579,7 +579,7 @@ b3DefaultWorldDef :: () -> b3WorldDef #foreign box3d;
 /// The body simulation type.
 /// Each body is one of these three types. The type determines how the body behaves in the simulation.
 /// @ingroup body
-b3BodyType :: enum u32 {
+b3BodyType :: enum s32 {
     staticBody    :: 0;
 
     kinematicBody :: 1;
@@ -787,7 +787,7 @@ b3DefaultSurfaceMaterial :: () -> b3SurfaceMaterial #foreign box3d;
 
 /// Shape type
 /// @ingroup shape
-b3ShapeType :: enum u32 {
+b3ShapeType :: enum s32 {
     capsuleShape   :: 0;
 
     compoundShape  :: 1;
@@ -954,7 +954,7 @@ b3Counters :: struct {
 /// Joint type enumeration. This is useful because all joint types use b3JointId and sometimes you
 /// want to get the type of a joint.
 /// @ingroup joint
-b3JointType :: enum u32 {
+b3JointType :: enum s32 {
     parallelJoint  :: 0;
     distanceJoint  :: 1;
     filterJoint    :: 2;
@@ -1872,7 +1872,7 @@ b3TOIInput :: struct {
 }
 
 /// Describes the TOI output
-b3TOIState :: enum u32 {
+b3TOIState :: enum s32 {
     toiStateUnknown    :: 0;
     toiStateFailed     :: 1;
     toiStateOverlapped :: 2;
@@ -1919,7 +1919,7 @@ b3TOIOutput :: struct {
 }
 
 /// Flags for tree nodes. For internal usage.
-b3TreeNodeFlags :: enum u32 {
+b3TreeNodeFlags :: enum s32 {
     allocatedNode :: 1;
     enlargedNode  :: 2;
     leafNode      :: 4;
@@ -2265,7 +2265,7 @@ b3MeshDef :: struct {
 }
 
 /// Triangle mesh edge flags.
-b3MeshEdgeFlags :: enum u32 {
+b3MeshEdgeFlags :: enum s32 {
     concaveEdge1        :: 1;
     concaveEdge2        :: 2;
     concaveEdge3        :: 4;
@@ -2791,7 +2791,7 @@ b3Manifold :: struct {
 }
 
 /// Cached separating axis feature.
-b3SeparatingFeature :: enum u32 {
+b3SeparatingFeature :: enum s32 {
     invalidAxis        :: 0;
     backsideAxis       :: 1;
     faceAxisA          :: 2;
@@ -2816,7 +2816,7 @@ b3SeparatingFeature :: enum u32 {
 }
 
 /// Cached triangle feature.
-b3TriangleFeature :: enum u32 {
+b3TriangleFeature :: enum s32 {
     featureNone         :: 0;
     featureTriangleFace :: 1;
     featureHullFace     :: 2;
@@ -2932,7 +2932,7 @@ b3LocalManifold :: struct {
 /// See https://www.rapidtables.com/web/color/index.html
 /// https://johndecember.com/html/spec/colorsvg.html
 /// https://upload.wikimedia.org/wikipedia/commons/2/2b/SVG_Recognized_color_keyword_names.svg
-b3HexColor :: enum u32 {
+b3HexColor :: enum s32 {
     colorAliceBlue            :: 15792383;
     colorAntiqueWhite         :: 16444375;
     colorAqua                 :: 65535;
@@ -3232,7 +3232,7 @@ b3HexColor :: enum u32 {
 /// b3HexColor (or b3SurfaceMaterial::customColor) to drive the renderer's PBR
 /// roughness and metalness. The low 24 bits stay RGB, so a plain 0xRRGGBB color
 /// reads as b3_debugMaterialDefault and keeps the renderer's per-body-type look.
-b3DebugMaterial :: enum u32 {
+b3DebugMaterial :: enum s32 {
     debugMaterialDefault  :: 0;
     debugMaterialMatte    :: 1;
     debugMaterialSoft     :: 2;
@@ -4146,7 +4146,7 @@ b3RecPlayer_SetDebugShapeCallbacks :: (player: *b3RecPlayer, createDebugShape: b
 b3RecPlayer_DrawFrameQueries :: (player: *b3RecPlayer, draw: *b3DebugDraw, queryIndex: s32, selectedIndex: s32) -> void #foreign box3d;
 
 /// The kind of a recorded spatial query, matching the public query and cast functions.
-b3RecQueryType :: enum u32 {
+b3RecQueryType :: enum s32 {
     recQueryOverlapAABB    :: 0;
     recQueryOverlapShape   :: 1;
     recQueryCastRay        :: 2;
@@ -8381,7 +8381,9 @@ b3Contact_GetData :: (contactId: b3ContactId) -> b3ContactData #foreign box3d;
 }
 
 
-#if OS == .MACOS {
+#if OS == .WINDOWS {
+    box3d :: #library "bin/windows/box3d";
+} else #if OS == .MACOS {
     box3d :: #library "bin/macos/libbox3d";
 } else #if OS == .LINUX {
     box3d :: #library "bin/linux/libbox3d";
