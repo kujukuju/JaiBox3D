@@ -6,8 +6,8 @@
 #import "BuildCpp";
 #import "File_Utilities";
 
-#if OS != .MACOS {
-    #assert false "JaiBox3D is currently macOS-only.\n";
+#if OS != .MACOS && OS != .LINUX {
+    #assert false "JaiBox3D binding generation currently supports macOS and Linux.\n";
 }
 
 #run {
@@ -16,8 +16,13 @@
 
     using opts: Generate_Bindings_Options;
 
-    array_add(*library_search_paths, "bin/macos");
+    #if OS == .MACOS {
+        array_add(*library_search_paths, "bin/macos");
+    } else #if OS == .LINUX {
+        array_add(*library_search_paths, "bin/linux");
+    }
     array_add(*libraries, Library.{"libbox3d", "box3d"});
+    generate_library_declarations = false;
 
     array_add(*include_paths, "../box3d/include");
     array_add(*source_files, "../box3d/include/box3d/box3d.h");
@@ -38,6 +43,14 @@
     };
 
     footer = #string JAI
+
+#if OS == .MACOS {
+    box3d :: #library "bin/macos/libbox3d";
+} else #if OS == .LINUX {
+    box3d :: #library "bin/linux/libbox3d";
+} else {
+    #assert false "Unsupported JaiBox3D OS.\n";
+}
 
 // The C anonymous union is 32 bytes with 8-byte alignment because b3Mesh is
 // 8-byte aligned while b3Capsule is the 28-byte largest member. Jai overlays

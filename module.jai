@@ -5344,7 +5344,6 @@ b3Contact_GetData :: (contactId: b3ContactId) -> b3ContactData #foreign box3d;
 
 #import "Basic"; // For assert
 
-box3d :: #library "bin/macos/libbox3d";
 
 #run {
     {
@@ -8381,6 +8380,14 @@ box3d :: #library "bin/macos/libbox3d";
     }
 }
 
+
+#if OS == .MACOS {
+    box3d :: #library "bin/macos/libbox3d";
+} else #if OS == .LINUX {
+    box3d :: #library "bin/linux/libbox3d";
+} else {
+    #assert false "Unsupported JaiBox3D OS.\n";
+}
 
 // The C anonymous union is 32 bytes with 8-byte alignment because b3Mesh is
 // 8-byte aligned while b3Capsule is the 28-byte largest member. Jai overlays
