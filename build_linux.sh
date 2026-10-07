@@ -31,6 +31,6 @@ cmake --build "$BUILD_DIR" --target box3d --parallel
 mkdir -p "$OUTPUT_DIR"
 cp -P \
     "$BUILD_DIR/bin/libbox3d.so" \
-    "$BUILD_DIR/bin/libbox3d.so.0.2" \
-    "$BUILD_DIR/bin/libbox3d.so.0.2.0" \
+    "$BUILD_DIR/bin/libbox3d.so.0.3" \
+    "$BUILD_DIR/bin/libbox3d.so.0.3.0" \
     "$OUTPUT_DIR/"

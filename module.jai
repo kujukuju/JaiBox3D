@@ -428,16 +428,24 @@ b3PreSolveData :: struct {
 
     /// Continuous mesh or height-field triangle for shape B, or B3_NULL_INDEX.
     triangleIndexB: s32;
+
+    /// Read-only contact id. Identifies the current contact during discrete pre-solve.
+    /// During continuous pre-solve, identifies a touching contact for this shape pair and compound child only if
+    /// its discrete callback completed successfully with enabled points in this time step; otherwise null.
+    /// Use b3Contact_GetData to read its solved manifolds during continuous pre-solve. Do not mutate them or retain
+    /// their pointers. Contact shape A/B order may differ from the continuous candidate; triangle matching is caller-owned.
+    contactId:      b3ContactId;
 }
 
 /// Prototype for a pre-solve callback.
 /// This is called for awake solid contacts when either shape has enabled pre-solve events.
 /// A discrete callback is invoked once per updated contact in the contact's authoritative shape A/B order.
-/// It may modify b3Manifold::normal and the documented mutable fields in b3ManifoldPoint. Use b3PreSolve_SetPoint
-/// to move a point. Set b3ManifoldPoint::enabled to false to remove a point for the current step. If all points are
+/// It may modify b3Manifold::normal, b3Manifold::maxPushSpeed, b3Manifold::contactDampingRatio,
+/// and the documented mutable fields in b3ManifoldPoint.
+/// Use b3PreSolve_SetPoint to move a point. Set b3ManifoldPoint::enabled to false to remove a point for the current step. If all points are
 /// disabled, the contact is disabled for the step. Do not modify manifold pointers, manifold counts, or point counts.
-/// During continuous collision there is no solver manifold and all data fields are read-only; only returning false to reject
-/// the candidate has an effect.
+/// During continuous collision the manifold fields are null/zero and all data fields are read-only; only returning false
+/// to reject the candidate has an effect. A non-null contactId permits reading the matching solved contact with b3Contact_GetData.
 /// Notes:
 /// - this function must be thread-safe
 /// - this is only called if one of the shapes has enabled pre-solve events
@@ -2770,24 +2778,36 @@ b3ManifoldPoint :: struct {
 /// @note Box3D uses speculative collision so some contact points may be separated.
 b3Manifold :: struct {
     /// The manifold points. There may be 1 to 4 valid points.
-    points:          [4] b3ManifoldPoint;
+    points:              [4] b3ManifoldPoint;
 
     /// The unit normal vector in world space, points from shape A to shape B.
     /// This may be modified during a discrete pre-solve callback.
-    normal:          b3Vec3;
+    normal:              b3Vec3;
 
     /// Central friction angular impulse (applied about the normal)
-    twistImpulse:    float;
+    twistImpulse:        float;
 
     /// Central friction linear impulse
-    frictionImpulse: b3Vec3;
+    frictionImpulse:     b3Vec3;
 
     /// Rolling resistance angular impulse
-    rollingImpulse:  b3Vec3;
+    rollingImpulse:      b3Vec3;
 
     /// The number of contact points, will be 0 to 4.
     /// This is read-only during a pre-solve callback. Disable individual points with b3ManifoldPoint::enabled.
-    pointCount:      s32;
+    pointCount:          s32;
+
+    /// Maximum normal penetration-recovery bias speed, in length units per second.
+    /// Initialized from the world's contactSpeed on each contact update. This may be modified during discrete pre-solve.
+    /// Must be finite and nonnegative. Zero disables recovery bias, not collision response.
+    /// FLT_MAX removes the speed cap while retaining contact softness. Speculative contacts and restitution are unaffected.
+    maxPushSpeed:        float;
+
+    /// Current-step contact damping ratio override, reset to -1 on each contact update.
+    /// -1 preserves world softness. Otherwise must be finite and nonnegative; may be modified during discrete pre-solve.
+    /// Uses the world's time-step-limited contact Hertz, including double Hertz and half damping for static contacts,
+    /// so this has the same effect on this manifold as setting the world's contactDampingRatio to this value.
+    contactDampingRatio: float;
 }
 
 /// Cached separating axis feature.
@@ -5338,6 +5358,8 @@ b3WheelJoint_GetSteeringTorque :: (jointId: b3JointId) -> float #foreign box3d;
 b3Contact_IsValid :: (id: b3ContactId) -> bool #foreign box3d;
 
 /// Get the manifolds for a contact. The manifold may have no points if the contact is not touching.
+/// During continuous pre-solve this may be called with the non-null b3PreSolveData::contactId to read the
+/// matching contact's solved manifolds. Do not mutate this borrowed data or retain manifold pointers.
 b3Contact_GetData :: (contactId: b3ContactId) -> b3ContactData #foreign box3d;
 
 #scope_file
@@ -5641,9 +5663,12 @@ b3Contact_GetData :: (contactId: b3ContactId) -> b3ContactData #foreign box3d;
                 case "triangleIndexB";
                     assert(it.offset_in_bytes == 84, "b3PreSolveData.triangleIndexB has unexpected offset % instead of 84", it.offset_in_bytes);
                     assert(it.type.runtime_size == 4, "b3PreSolveData.triangleIndexB has unexpected size % instead of 4", it.type.runtime_size);
+                case "contactId";
+                    assert(it.offset_in_bytes == 88, "b3PreSolveData.contactId has unexpected offset % instead of 88", it.offset_in_bytes);
+                    assert(it.type.runtime_size == 12, "b3PreSolveData.contactId has unexpected size % instead of 12", it.type.runtime_size);
             }
         }
-        assert(size_of(b3PreSolveData) == 88, "b3PreSolveData has size % instead of 88", size_of(b3PreSolveData));
+        assert(size_of(b3PreSolveData) == 104, "b3PreSolveData has size % instead of 104", size_of(b3PreSolveData));
     }
 
     {
@@ -8077,9 +8102,15 @@ b3Contact_GetData :: (contactId: b3ContactId) -> b3ContactData #foreign box3d;
                 case "pointCount";
                     assert(it.offset_in_bytes == 312, "b3Manifold.pointCount has unexpected offset % instead of 312", it.offset_in_bytes);
                     assert(it.type.runtime_size == 4, "b3Manifold.pointCount has unexpected size % instead of 4", it.type.runtime_size);
+                case "maxPushSpeed";
+                    assert(it.offset_in_bytes == 316, "b3Manifold.maxPushSpeed has unexpected offset % instead of 316", it.offset_in_bytes);
+                    assert(it.type.runtime_size == 4, "b3Manifold.maxPushSpeed has unexpected size % instead of 4", it.type.runtime_size);
+                case "contactDampingRatio";
+                    assert(it.offset_in_bytes == 320, "b3Manifold.contactDampingRatio has unexpected offset % instead of 320", it.offset_in_bytes);
+                    assert(it.type.runtime_size == 4, "b3Manifold.contactDampingRatio has unexpected size % instead of 4", it.type.runtime_size);
             }
         }
-        assert(size_of(b3Manifold) == 316, "b3Manifold has size % instead of 316", size_of(b3Manifold));
+        assert(size_of(b3Manifold) == 324, "b3Manifold has size % instead of 324", size_of(b3Manifold));
     }
 
     {

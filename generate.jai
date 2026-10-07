@@ -38,6 +38,12 @@
     generate_compile_time_struct_checks = true;
 
     opts.visitor = (decl: *Declaration, parent_decl: *Declaration) -> Declaration_Visit_Result {
+        if decl.kind == .ENUM && starts_with(decl.name, "b3") {
+            // Preserve the existing signed bindings across Clang targets; Box3D enums fit in s32.
+            assert(decl.type.size == size_of(s32));
+            decl.type = context.generator.type_def_s32;
+        }
+
         if decl.kind == .STRUCT && decl.name == "b3ChildShape" {
             decl.decl_flags |= .OMIT_FROM_OUTPUT;
             return .STOP;
